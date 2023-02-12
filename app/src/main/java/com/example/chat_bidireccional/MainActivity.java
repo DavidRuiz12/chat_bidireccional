@@ -25,17 +25,15 @@ import adapter.RecyclerAdapter;
 
 public class MainActivity extends AppCompatActivity  {
 
+    //Creacion de los atributos.
     TextView nombre;
     TextView ip;
-    TextView area;
     TextView mensaje;
     Button enviar;
     Socket socket;
     String iptxt;
-    RecyclerView recview;
-    RecyclerAdapter recAdapter;
-    ArrayList<String> lista;
-
+    TextView enviado;
+    TextView recibido;
 
 
     @Override
@@ -43,19 +41,18 @@ public class MainActivity extends AppCompatActivity  {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        recview = (RecyclerView) findViewById(R.id.area);
+        //Declaracion de los atributos.
         nombre = (TextView) findViewById(R.id.txt_nombre);
         ip = (TextView) findViewById(R.id.txt_ip);
         mensaje = (TextView) findViewById(R.id.txt_mensaje);
         enviar = (Button) findViewById(R.id.btn_enviar);
-        lista = new ArrayList<String>();
-        LinearLayoutManager layoutManager = new LinearLayoutManager(MainActivity.this);
-        recview.setLayoutManager(layoutManager);
-        recAdapter = new RecyclerAdapter(lista);
-        recview.setAdapter(recAdapter);
-        //El servidor esta activo.
+        enviado = (TextView) findViewById(R.id.msg_enviado);
+       recibido = (TextView) findViewById(R.id.msg_recibido);
+
+        //Iniciamos el servidor. Este estara a la escucha siempre,
         recibir();
 
+        //Creamos el listener de del boton enviar, que se encarga de introducir la Ip dentro de un string y ademas inicia el metodo enviar.
         enviar.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -73,7 +70,9 @@ public class MainActivity extends AppCompatActivity  {
             @Override
             public void run() {
                 try {
+                    //Creacion del Socket del servidor.
                     ServerSocket servidor = new ServerSocket(9999);
+                    //Creacion del bucle infinito para que el servdor este a la escucha siempre.
                     while (true) {
                         Socket misocket = servidor.accept();
                         DataInputStream dis = new DataInputStream(misocket.getInputStream());
@@ -83,11 +82,10 @@ public class MainActivity extends AppCompatActivity  {
                         runOnUiThread(new Runnable() {
                             @Override
                             public void run() {
+                                recibido.setText(mensaje_recibido);
+                               // mensajes.add("R" + mensaje_recibido);
+                                //Log.d("recibido", mensajes.toString());
 
-                                mensajes.add("R" + mensaje_recibido);
-                                recAdapter.setMensajes(mensajes);
-                                Log.d("recibido", mensajes.toString());
-                                recAdapter.notifyDataSetChanged();
                             }
                         });
 
@@ -103,21 +101,24 @@ public class MainActivity extends AppCompatActivity  {
     }
 
     public void enviar(){
+        //Creamos el hilo para poder enviar el mensaje.
             Thread hilo2 = new Thread(new Runnable() {
                 @Override
                 public void run() {
+                    //Dentro del hilo creamos e iniciamos el Socket.
                     Socket misocket;
                     try {
                             misocket = new Socket(iptxt,9999);
+                            //Creacion del flujo por donde se van a mandar los mensajes.
                             DataOutputStream dos = new DataOutputStream(misocket.getOutputStream());
+                            //Introducimos el mesaje que se envia dentro de un string.
                             String mensaje_enviado = mensaje.getText().toString();
                             runOnUiThread(new Runnable() {
                                 @Override
                                 public void run() {
-                                    mensajes.add("E" + mensaje_enviado );
-                                    recAdapter.setMensajes(mensajes);
-                                    recAdapter.notifyDataSetChanged();
-                                    mensaje.setText("");
+                                    //Este hilo se utiliza para mostrar los mensajes recibidos dentro del area de texto.
+                                    enviado.setText(mensaje_enviado);
+
                                 }
                             });
 
@@ -126,11 +127,11 @@ public class MainActivity extends AppCompatActivity  {
                             misocket.close();
 
                     } catch (IOException ex) {
-                        Log.d("Hola","entra");
                         System.out.println(ex.getMessage());
                     }
                 }
             });
+            //Volvemos a iniciar el hilo.
             hilo2.start();
         }
 
